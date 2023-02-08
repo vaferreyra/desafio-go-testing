@@ -9,6 +9,7 @@ func main() {
 	r := gin.Default()
 	router.MapRoutes(r)
 
-	r.Run(":18085")
-
+	if err := r.Run(":18085"); err != nil {
+		panic(err)
+	}
 }
