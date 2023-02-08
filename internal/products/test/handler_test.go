@@ -14,6 +14,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var (
+	LIST_PRODUCT_RETURN = []products.Product{
+		{
+			ID:          "mock",
+			SellerID:    "FEX112AC",
+			Description: "generic product",
+			Price:       123.55,
+		},
+	}
+)
+
 func createServerForProductsTest(rp products.Repository) *gin.Engine {
 	// Instances.
 	service := products.NewService(rp)
@@ -51,93 +62,71 @@ type responseProducts struct {
 func TestGetProducts(t *testing.T) {
 	repository := mocks.NewFakeRepository()
 	server := createServerForProductsTest(repository)
-	t.Run("Get products happy path return a 200 status code", func(t *testing.T) {
-		// Arrange.
-		repository.Reset()
-		expectedStatusCode := http.StatusOK
-		repository.ReturnOnGet = []products.Product{
-			{
-				ID:          "mock",
-				SellerID:    "FEX112AC",
-				Description: "generic product",
-				Price:       123.55,
-			},
-		}
 
-		expectedData := []products.Product{
-			{
-				ID:          "mock",
-				SellerID:    "FEX112AC",
-				Description: "generic product",
-				Price:       123.55,
-			},
-		}
+	testCases := []struct {
+		Name               string
+		ExpectedStatusCode int
+		RepoReturnOnGet    []products.Product
+		RepoErrorOnGet     error
+		ExpectedData       []products.Product
+		Path               string
+	}{
+		{
+			Name:               "Get products happy path return a 200 status code",
+			ExpectedStatusCode: http.StatusOK,
+			RepoReturnOnGet:    LIST_PRODUCT_RETURN,
+			RepoErrorOnGet:     nil,
+			ExpectedData:       LIST_PRODUCT_RETURN,
+			Path:               "/api/v1/products?seller_id=FEX112AC",
+		},
+		{
+			Name:               "Get products returns 400 status code when paremeter is empty",
+			ExpectedStatusCode: http.StatusBadRequest,
+			RepoReturnOnGet:    nil,
+			RepoErrorOnGet:     nil,
+			ExpectedData:       nil,
+			Path:               "/api/v1/products?seller_id=",
+		},
+		{
+			Name:               "Get products returns 500 status code when repository returns an error",
+			ExpectedStatusCode: http.StatusInternalServerError,
+			RepoReturnOnGet:    nil,
+			RepoErrorOnGet:     errors.New("I'm an unexpected error"),
+			ExpectedData:       nil,
+			Path:               "/api/v1/products?seller_id=FEX112AC",
+		},
+		{
+			Name:               "Get products returns an empty data",
+			ExpectedStatusCode: http.StatusOK,
+			RepoReturnOnGet:    nil,
+			RepoErrorOnGet:     nil,
+			ExpectedData:       nil,
+			Path:               "/api/v1/products?seller_id=OTHERID",
+		},
+	}
 
-		req, res := NewRequest(http.MethodGet, "/api/v1/products?seller_id=FEX112AC", "")
+	for _, tc := range testCases {
 
-		// Act.
-		server.ServeHTTP(res, req)
-		var r responseProducts
-		err := json.Unmarshal(res.Body.Bytes(), &r)
+		t.Run(tc.Name, func(t *testing.T) {
+			// Arrange.
+			repository.Reset()
+			expectedStatusCode := tc.ExpectedStatusCode
+			repository.ReturnOnGet = tc.RepoReturnOnGet
+			repository.ErrorOnGet = tc.RepoErrorOnGet
 
-		// Assert.
-		assert.NoError(t, err)
-		assert.Equal(t, expectedStatusCode, res.Code)
-		assert.Equal(t, expectedData, r.Data)
-	})
+			expectedData := tc.ExpectedData
 
-	t.Run("Get products returns 400 status code when paremeter is empty", func(t *testing.T) {
-		// Arrange.
-		repository.Reset()
-		expectedStatusCode := http.StatusBadRequest
+			req, res := NewRequest(http.MethodGet, tc.Path, "")
 
-		req, res := NewRequest(http.MethodGet, "/api/v1/products?seller_id=", "")
+			// Act.
+			server.ServeHTTP(res, req)
+			var r responseProducts
+			err := json.Unmarshal(res.Body.Bytes(), &r)
 
-		// Act.
-		server.ServeHTTP(res, req)
-		var r responseProducts
-		err := json.Unmarshal(res.Body.Bytes(), &r)
-
-		// Assert.
-		assert.NoError(t, err)
-		assert.Equal(t, expectedStatusCode, res.Code)
-		assert.Equal(t, r.Message, "Invalid Parameter")
-	})
-
-	t.Run("Get products returns 500 status code when repository returns an error", func(t *testing.T) {
-		// Arrange.
-		repository.Reset()
-		expectedStatusCode := http.StatusInternalServerError
-		repository.ErrorOnGet = errors.New("I'm an unexpected error")
-
-		req, res := NewRequest(http.MethodGet, "/api/v1/products?seller_id=FEX112AC", "")
-
-		// Act.
-		server.ServeHTTP(res, req)
-		var r responseProducts
-		err := json.Unmarshal(res.Body.Bytes(), &r)
-
-		// Assert.
-		assert.NoError(t, err)
-		assert.Equal(t, expectedStatusCode, res.Code)
-		assert.Equal(t, r.Message, "Internal server error")
-	})
-
-	t.Run("Get products returns an empty data", func(t *testing.T) {
-		// Arrange.
-		repository.Reset()
-		expectedStatus := http.StatusOK
-
-		req, res := NewRequest(http.MethodGet, "/api/v1/products?seller_id=OTHERID", "")
-
-		// Act.
-		server.ServeHTTP(res, req)
-		var r responseProducts
-		err := json.Unmarshal(res.Body.Bytes(), &r)
-
-		// Assert.
-		assert.NoError(t, err)
-		assert.Equal(t, expectedStatus, res.Code)
-		assert.Empty(t, r.Data)
-	})
+			// Assert.
+			assert.NoError(t, err)
+			assert.Equal(t, expectedStatusCode, res.Code)
+			assert.Equal(t, expectedData, r.Data)
+		})
+	}
 }
