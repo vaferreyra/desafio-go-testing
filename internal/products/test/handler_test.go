@@ -83,4 +83,29 @@ func TestGetProducts(t *testing.T) {
 		assert.Equal(t, expectedStatusCode, res.Code)
 		assert.Equal(t, expectedData, r.Data)
 	})
+
+	t.Run("Get products returns 400 status code when paremeter is empty", func(t *testing.T) {
+		// Arrange.
+		expectedStatusCode := http.StatusBadRequest
+
+		req, res := NewRequest(http.MethodGet, "/api/v1/products?seller_id=", "")
+
+		// Act.
+		server.ServeHTTP(res, req)
+		var r responseProducts
+		err := json.Unmarshal(res.Body.Bytes(), &r)
+
+		// Assert.
+		assert.NoError(t, err)
+		assert.Equal(t, expectedStatusCode, res.Code)
+		assert.Equal(t, r.Message, "Invalid Parameter")
+	})
+
+	t.Run("Get products returns 500 status code when repository returns an error", func(t *testing.T) {
+		// Arrange.
+
+		// Act.
+
+		// Assert.
+	})
 }
