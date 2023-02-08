@@ -2,6 +2,7 @@ package test
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -52,6 +53,7 @@ func TestGetProducts(t *testing.T) {
 	server := createServerForProductsTest(repository)
 	t.Run("Get products happy path return a 200 status code", func(t *testing.T) {
 		// Arrange.
+		expectedStatusCode := http.StatusOK
 		repository.ReturnOnGet = []products.Product{
 			{
 				ID:          "mock",
@@ -61,7 +63,6 @@ func TestGetProducts(t *testing.T) {
 			},
 		}
 
-		expectedStatusCode := http.StatusOK
 		expectedData := []products.Product{
 			{
 				ID:          "mock",
@@ -103,9 +104,19 @@ func TestGetProducts(t *testing.T) {
 
 	t.Run("Get products returns 500 status code when repository returns an error", func(t *testing.T) {
 		// Arrange.
+		expectedStatusCode := http.StatusInternalServerError
+		repository.ErrorOnGet = errors.New("I'm an unexpected error")
+
+		req, res := NewRequest(http.MethodGet, "/api/v1/products?seller_id=FEX112AC", "")
 
 		// Act.
+		server.ServeHTTP(res, req)
+		var r responseProducts
+		err := json.Unmarshal(res.Body.Bytes(), &r)
 
 		// Assert.
+		assert.NoError(t, err)
+		assert.Equal(t, expectedStatusCode, res.Code)
+		assert.Equal(t, r.Message, "Internal server error")
 	})
 }
