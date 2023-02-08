@@ -1,6 +1,7 @@
 package test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/bootcamp-go/desafio-cierre-testing/internal/products"
@@ -38,5 +39,20 @@ func TestGetAllBySeller(t *testing.T) {
 		// Assert.
 		assert.NoError(t, err)
 		assert.Equal(t, obtainedResult, expectedResult)
+	})
+
+	t.Run("Get all by seller error internal", func(t *testing.T) {
+		// Arrange.
+		repository := mocks.NewFakeRepository()
+		repository.ErrorOnGet = errors.New("I'm an repository error")
+
+		service := products.NewService(repository)
+
+		// Act.
+		_, err := service.GetAllBySeller("FEX112AC")
+
+		// Assert.
+		assert.Error(t, err)
+		assert.True(t, errors.Is(err, products.ErrInternalServer))
 	})
 }
