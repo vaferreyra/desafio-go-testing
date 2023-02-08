@@ -1,6 +1,9 @@
 package products
 
 import (
+	"net/http"
+
+	"github.com/bootcamp-go/desafio-cierre-testing/internal/products/web"
 	"github.com/gin-gonic/gin"
 )
 
@@ -17,14 +20,14 @@ func NewHandler(s Service) *Handler {
 func (h *Handler) GetProducts(ctx *gin.Context) {
 	sellerID := ctx.Query("seller_id")
 	if sellerID == "" {
-		ctx.JSON(400, gin.H{"error": "seller_id query param is required"})
+		web.ResponseErr(ctx, http.StatusBadRequest, "Invalid Parameter")
 		return
 	}
 	products, err := h.svc.GetAllBySeller(sellerID)
 	if err != nil {
-		ctx.JSON(500, gin.H{"error": err.Error()})
+		web.ResponseErr(ctx, http.StatusInternalServerError, "Internal server error")
 		return
 	}
-	ctx.JSON(200, products)
 
+	web.ResponseOk(ctx, http.StatusOK, "Ok", products)
 }
