@@ -20,7 +20,7 @@ func NewHandler(s Service) *Handler {
 func (h *Handler) GetProducts(ctx *gin.Context) {
 	sellerID := ctx.Query("seller_id")
 	if sellerID == "" {
-		web.ResponseErr(ctx, http.StatusBadRequest, "Invalid Parameter")
+		web.ResponseErr(ctx, http.StatusBadRequest, "Invalid parameter")
 		return
 	}
 	products, err := h.svc.GetAllBySeller(sellerID)

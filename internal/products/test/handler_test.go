@@ -70,6 +70,7 @@ func TestGetProducts(t *testing.T) {
 		RepoErrorOnGet     error
 		ExpectedData       []products.Product
 		Path               string
+		ExpectedMessage    string
 	}{
 		{
 			Name:               "Get products happy path return a 200 status code",
@@ -78,6 +79,7 @@ func TestGetProducts(t *testing.T) {
 			RepoErrorOnGet:     nil,
 			ExpectedData:       LIST_PRODUCT_RETURN,
 			Path:               "/api/v1/products?seller_id=FEX112AC",
+			ExpectedMessage:    "Ok",
 		},
 		{
 			Name:               "Get products returns 400 status code when paremeter is empty",
@@ -86,6 +88,7 @@ func TestGetProducts(t *testing.T) {
 			RepoErrorOnGet:     nil,
 			ExpectedData:       nil,
 			Path:               "/api/v1/products?seller_id=",
+			ExpectedMessage:    "Invalid parameter",
 		},
 		{
 			Name:               "Get products returns 500 status code when repository returns an error",
@@ -94,6 +97,7 @@ func TestGetProducts(t *testing.T) {
 			RepoErrorOnGet:     errors.New("I'm an unexpected error"),
 			ExpectedData:       nil,
 			Path:               "/api/v1/products?seller_id=FEX112AC",
+			ExpectedMessage:    "Internal server error",
 		},
 		{
 			Name:               "Get products returns an empty data",
@@ -102,6 +106,7 @@ func TestGetProducts(t *testing.T) {
 			RepoErrorOnGet:     nil,
 			ExpectedData:       nil,
 			Path:               "/api/v1/products?seller_id=OTHERID",
+			ExpectedMessage:    "Ok",
 		},
 	}
 
@@ -127,6 +132,7 @@ func TestGetProducts(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, expectedStatusCode, res.Code)
 			assert.Equal(t, expectedData, r.Data)
+			assert.Equal(t, tc.ExpectedMessage, r.Message)
 		})
 	}
 }
