@@ -53,6 +53,7 @@ func TestGetProducts(t *testing.T) {
 	server := createServerForProductsTest(repository)
 	t.Run("Get products happy path return a 200 status code", func(t *testing.T) {
 		// Arrange.
+		repository.Reset()
 		expectedStatusCode := http.StatusOK
 		repository.ReturnOnGet = []products.Product{
 			{
@@ -87,6 +88,7 @@ func TestGetProducts(t *testing.T) {
 
 	t.Run("Get products returns 400 status code when paremeter is empty", func(t *testing.T) {
 		// Arrange.
+		repository.Reset()
 		expectedStatusCode := http.StatusBadRequest
 
 		req, res := NewRequest(http.MethodGet, "/api/v1/products?seller_id=", "")
@@ -104,6 +106,7 @@ func TestGetProducts(t *testing.T) {
 
 	t.Run("Get products returns 500 status code when repository returns an error", func(t *testing.T) {
 		// Arrange.
+		repository.Reset()
 		expectedStatusCode := http.StatusInternalServerError
 		repository.ErrorOnGet = errors.New("I'm an unexpected error")
 
@@ -118,5 +121,23 @@ func TestGetProducts(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, expectedStatusCode, res.Code)
 		assert.Equal(t, r.Message, "Internal server error")
+	})
+
+	t.Run("Get products returns an empty data", func(t *testing.T) {
+		// Arrange.
+		repository.Reset()
+		expectedStatus := http.StatusOK
+
+		req, res := NewRequest(http.MethodGet, "/api/v1/products?seller_id=OTHERID", "")
+
+		// Act.
+		server.ServeHTTP(res, req)
+		var r responseProducts
+		err := json.Unmarshal(res.Body.Bytes(), &r)
+
+		// Assert.
+		assert.NoError(t, err)
+		assert.Equal(t, expectedStatus, res.Code)
+		assert.Empty(t, r.Data)
 	})
 }

@@ -14,3 +14,8 @@ func NewFakeRepository() *fakeRepository {
 func (fr *fakeRepository) GetAllBySeller(sellerID string) ([]products.Product, error) {
 	return fr.ReturnOnGet, fr.ErrorOnGet
 }
+
+func (fr *fakeRepository) Reset() {
+	fr.ReturnOnGet = make([]products.Product, 0)
+	fr.ErrorOnGet = nil
+}
